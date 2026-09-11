@@ -12,12 +12,13 @@ services:
         value: 3.11.0
 
   # 2. React + Vite Frontend Static Site
-  - type: static
+  - type: web
     name: omnimanga-frontend
+    runtime: static
     plan: free
     rootDir: frontend
     buildCommand: npm install && npm run build
-    staticPublishPath: dist
+    staticPublishPath: ./dist
     routes:
       - type: rewrite
         source: /*
