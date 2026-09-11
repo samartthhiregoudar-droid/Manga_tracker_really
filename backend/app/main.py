@@ -35,6 +35,15 @@ class TrackedItem(BaseModel):
 class TrackerCheckRequest(BaseModel):
     tracked_titles: List[TrackedItem]
 
+@app.get("/")
+def root():
+    return {
+        "message": "Welcome to OmniManga Legal Aggregator & Cross-Media API",
+        "docs_url": "/docs",
+        "health_check": "/api/health",
+        "status": "online"
+    }
+
 @app.get("/api/health")
 def health_check():
     return {
