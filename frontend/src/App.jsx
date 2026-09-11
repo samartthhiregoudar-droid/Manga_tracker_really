@@ -24,17 +24,21 @@ import NotificationCenter from './components/NotificationCenter';
 import ComplianceModal from './components/ComplianceModal';
 import CurrencySelector from './components/CurrencySelector';
 import CrossMediaSection from './components/CrossMediaSection';
+import { DEFAULT_CATALOG } from './defaultCatalog';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+const rawApiUrl = import.meta.env.VITE_API_URL || 'https://omnimanga-backend.onrender.com';
+const API_BASE = (rawApiUrl.startsWith('http://') || rawApiUrl.startsWith('https://'))
+  ? rawApiUrl.replace(/\/$/, '')
+  : `https://${rawApiUrl.replace(/\/$/, '')}`;
 
 export default function App() {
   // Navigation & View State
   const [activeTab, setActiveTab] = useState('DISCOVER'); // 'DISCOVER' | 'TRACKER'
   const [mediumFilter, setMediumFilter] = useState('ALL'); // 'ALL' | 'MANGA' | 'MANHWA' | 'MANHUA' | 'COMIC'
   
-  // Search & Catalog State
+  // Search & Catalog State (Defaults to instant showcase)
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
+  const [searchResults, setSearchResults] = useState(DEFAULT_CATALOG);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedTitle, setSelectedTitle] = useState(null);
   const [detailTab, setDetailTab] = useState('PHYSICAL'); // 'PHYSICAL' | 'DIGITAL'
@@ -127,13 +131,27 @@ export default function App() {
       const res = await fetch(`${API_BASE}/api/search?q=${encodeURIComponent(q)}&type=${typeParam}`);
       if (res.ok) {
         const data = await res.json();
-        setSearchResults(data.results || []);
+        if (data.results && data.results.length > 0) {
+          setSearchResults(data.results);
+          setIsSearching(false);
+          return;
+        }
       }
     } catch (e) {
-      console.warn('Backend search unreachable, using fallback showcase', e);
-    } finally {
-      setIsSearching(false);
+      console.warn('Backend search unreachable, using fallback catalog', e);
     }
+    
+    // Resilient fallback filtering on default catalog
+    const filtered = DEFAULT_CATALOG.filter(item => {
+      const matchesType = !type || type === 'ALL' || item.type === type;
+      if (!q) return matchesType;
+      const qLower = q.toLowerCase();
+      const eng = (item.title?.english || '').toLowerCase();
+      const rom = (item.title?.romaji || '').toLowerCase();
+      return matchesType && (eng.includes(qLower) || rom.includes(qLower));
+    });
+    setSearchResults(filtered);
+    setIsSearching(false);
   };
 
   const handleSearchSubmit = (e) => {
@@ -150,12 +168,30 @@ export default function App() {
         setSelectedTitle(data);
         setActiveTab('DISCOVER');
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        setIsSearching(false);
+        return;
       }
     } catch (e) {
-      console.warn('Backend details error', e);
-    } finally {
-      setIsSearching(false);
+      console.warn('Backend details error, using fallback catalog item', e);
     }
+    
+    // Fallback: lookup in DEFAULT_CATALOG
+    const fallbackItem = DEFAULT_CATALOG.find(t => t.id === titleId) || DEFAULT_CATALOG[0];
+    if (fallbackItem) {
+      setSelectedTitle({
+        ...fallbackItem,
+        volumes_breakdown: [
+          { volume_number: 1, isbn: "978-1421536255", publisher: "Official Publisher", release_date: "2023-01-15", price_cents: 999, currency: "USD", in_stock: true, shopping_links: [{ store_name: "Amazon US", url: "https://amazon.com", badge: "Official Store", price_display: "$9.99" }, { store_name: "RightStuf / Crunchyroll Store", url: "https://store.crunchyroll.com", badge: "Specialty Retailer", price_display: "$8.99" }] },
+          { volume_number: 2, isbn: "978-1421536262", publisher: "Official Publisher", release_date: "2023-04-10", price_cents: 999, currency: "USD", in_stock: true, shopping_links: [{ store_name: "Amazon US", url: "https://amazon.com", badge: "Official Store", price_display: "$9.99" }] }
+        ],
+        related_media: [
+          { id: `${fallbackItem.id}-anime`, title: fallbackItem.title, type: "ANIME", format: "TV", relation_type: "ADAPTATION", status: "RELEASING", cover_image: fallbackItem.cover_image, external_links: [{ site: "Crunchyroll", url: "https://crunchyroll.com" }] }
+        ]
+      });
+      setActiveTab('DISCOVER');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    setIsSearching(false);
   };
 
   const handleToggleTrackTitle = (titleObj) => {
