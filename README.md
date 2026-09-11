@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # OmniManga - Unified Manga, Anime & Light Novel Tracker & Legal Aggregator
 
 OmniManga is a full-stack web application designed for manga, manhwa, manhua, comics, light novel, and anime enthusiasts. It indexes official digital reading/streaming platforms (free & subscription) and physical bookstore shopping links with multi-currency pricing (USD, EUR, JPY, GBP, INR), while maintaining strict anti-piracy compliance.
@@ -93,3 +94,6 @@ This repository is pre-configured with a `render.yaml` Blueprint for 1-click dep
 - **Backend**: Python 3.11+, FastAPI, Uvicorn, httpx, BeautifulSoup4, Cachetools
 - **Frontend**: React 19, Vite, Lucide Icons, Vanilla CSS Design System
 - **APIs & Data**: AniList GraphQL API, MangaDex API, Open Library Books API
+=======
+# Manga_tracker_really
+>>>>>>> origin/main
